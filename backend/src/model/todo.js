@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const TodoSchema = new mongoose.Schema(
   {
@@ -14,6 +14,11 @@ const TodoSchema = new mongoose.Schema(
     },
     date: {
       type: Date
+    },
+    status: {
+      type: String,
+      enum: ["incomplete", "completed"],
+      default: "incomplete"
     }
   },
   {
@@ -21,4 +26,4 @@ const TodoSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("Todo", TodoSchema);
+module.exports = mongoose.model("Todo", TodoSchema);
