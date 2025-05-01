@@ -5,11 +5,18 @@ const createTodo = async (req, res) => {
   try {
     const { title, description, date } = req.body;
 
+    // Validate date: Reject if date is in the past
+    if (new Date(date) < new Date()) {
+      return res.status(400).json({ 
+        message: "Please enter a valid date (today or future)." 
+      });
+    }
+
     const newTodo = new Todo({
       title,
       description,
       date,
-      status: 'incomplete', 
+      status: 'incomplete',
     });
 
     const savedTodo = await newTodo.save();

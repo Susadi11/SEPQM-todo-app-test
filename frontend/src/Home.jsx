@@ -63,20 +63,24 @@ function Home() {
 
     const handleAddTodo = async (e) => {
         e.preventDefault();
-        if (newTodo.title.trim() === '') return;
-
+        if (newTodo.title.trim() === '') {
+            setError("Title is required");
+            return;
+        }
+      
         try {
             await axios.post('http://localhost:5555/api/todos', newTodo);
-            fetchTodos(); // Refresh the list after add
-            setNewTodo({
-                title: '',
-                description: '',
-                date: '',
-                status: 'incomplete'
-            });
+            fetchTodos();
+            setNewTodo({ title: '', description: '', date: '', status: 'incomplete' });
             setShowModal(false);
+            setError(null); // Clear previous errors
         } catch (err) {
-            setError(err.message);
+            // Check if this is our custom validation error
+            if (err.response?.status === 400 && err.response?.data?.message) {
+                setError(err.response.data.message);
+            } else {
+                setError(err.response?.data?.message || "Failed to add task. Please try again.");
+            }
         }
     };
 
@@ -84,7 +88,7 @@ function Home() {
     const completeTodos = todos.filter(todo => todo.status === 'completed');
 
     if (loading) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Loading...</div>;
-    if (error) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Error: {error}</div>;
+    if (error && !showModal) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Error: {error}</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -96,7 +100,10 @@ function Home() {
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-2xl font-bold text-gray-800">Add New Task</h2>
                                 <button
-                                    onClick={() => setShowModal(false)}
+                                    onClick={() => {
+                                        setShowModal(false);
+                                        setError(null);
+                                    }}
                                     className="text-gray-500 hover:text-gray-700"
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -104,9 +111,14 @@ function Home() {
                                     </svg>
                                 </button>
                             </div>
+                            {error && (
+                                <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                                    {error}
+                                </div>
+                            )}
                             <form onSubmit={handleAddTodo}>
                                 <div className="mb-4">
-                                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
                                     <input
                                         type="text"
                                         id="title"
@@ -142,7 +154,10 @@ function Home() {
                                 <div className="flex justify-end space-x-3">
                                     <button
                                         type="button"
-                                        onClick={() => setShowModal(false)}
+                                        onClick={() => {
+                                            setShowModal(false);
+                                            setError(null);
+                                        }}
                                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
                                     >
                                         Cancel
@@ -165,7 +180,10 @@ function Home() {
                 <div className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-indigo-700">Task Dashboard</h1>
                     <button
-                        onClick={() => setShowModal(true)}
+                        onClick={() => {
+                            setShowModal(true);
+                            setError(null);
+                        }}
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -175,8 +193,8 @@ function Home() {
                     </button>
                 </div>
 
-                {/* Error message */}
-                {error && (
+                {/* Error message (for non-modal errors) */}
+                {error && !showModal && (
                     <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
                         Error: {error}
                     </div>
@@ -225,12 +243,14 @@ function Home() {
                                                 </div>
                                             </div>
                                             <p className="text-sm text-gray-600 mt-2">{todo.description}</p>
-                                            <div className="mt-4 flex items-center text-xs text-gray-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                {new Date(todo.date).toLocaleDateString()}
-                                            </div>
+                                            {todo.date && (
+                                                <div className="mt-4 flex items-center text-xs text-gray-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    {new Date(todo.date).toLocaleDateString()}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
@@ -279,12 +299,14 @@ function Home() {
                                                 </div>
                                             </div>
                                             <p className="text-sm text-gray-600 mt-2 line-through">{todo.description}</p>
-                                            <div className="mt-4 flex items-center text-xs text-gray-500">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                                </svg>
-                                                {new Date(todo.date).toLocaleDateString()}
-                                            </div>
+                                            {todo.date && (
+                                                <div className="mt-4 flex items-center text-xs text-gray-500">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    {new Date(todo.date).toLocaleDateString()}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}
