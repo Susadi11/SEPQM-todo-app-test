@@ -1,59 +1,56 @@
-// src/Home.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 function Home() {
-    // Sample todos data (static, no backend connection)
-    const [todos, setTodos] = useState([
-        {
-            id: 1,
-            topic: 'Complete project',
-            description: 'Finish the React todo application UI',
-            date: '2023-06-15',
-            status: 'incomplete'
-        },
-        {
-            id: 2,
-            topic: 'Review design',
-            description: 'Check the new Figma mockups with team',
-            date: '2023-06-16',
-            status: 'incomplete'
-        },
-        {
-            id: 3,
-            topic: 'Team meeting',
-            description: 'Weekly sync with development team',
-            date: '2023-06-12',
-            status: 'complete'
-        },
-        {
-            id: 4,
-            topic: 'Update documentation',
-            description: 'Add new API endpoints to docs',
-            date: '2023-06-18',
-            status: 'complete'
-        }
-    ]);
-
-    // State for modal visibility
+    const [todos, setTodos] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    // State for new todo form
     const [newTodo, setNewTodo] = useState({
-        topic: '',
+        title: '',
         description: '',
         date: '',
         status: 'incomplete'
     });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    const toggleStatus = (id) => {
-        setTodos(prev => prev.map(todo =>
-            todo.id === id
-                ? { ...todo, status: todo.status === 'incomplete' ? 'complete' : 'incomplete' }
-                : todo
-        ));
+    // Fetch todos from backend
+    const fetchTodos = async () => {
+        try {
+            const response = await axios.get('http://localhost:5555/api/todos');
+            setTodos(response.data);
+            setLoading(false);
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
     };
 
-    const deleteTodo = (id) => {
-        setTodos(prev => prev.filter(todo => todo.id !== id));
+    useEffect(() => {
+        fetchTodos();
+    }, []);
+
+    const toggleStatus = async (id) => {
+        try {
+            const todoToUpdate = todos.find(todo => todo._id === id);
+            const newStatus = todoToUpdate.status === 'incomplete' ? 'completed' : 'incomplete';
+
+            await axios.put(`http://localhost:5555/api/todos/${id}`, {
+                status: newStatus
+            });
+
+            fetchTodos(); // Refresh the list after update
+        } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const deleteTodo = async (id) => {
+        try {
+            await axios.delete(`http://localhost:5555/api/todos/${id}`);
+            fetchTodos(); // Refresh the list after delete
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     const handleInputChange = (e) => {
@@ -64,26 +61,30 @@ function Home() {
         }));
     };
 
-    const handleAddTodo = (e) => {
+    const handleAddTodo = async (e) => {
         e.preventDefault();
-        if (newTodo.topic.trim() === '') return;
+        if (newTodo.title.trim() === '') return;
 
-        setTodos(prev => [...prev, {
-            ...newTodo,
-            id: Date.now()
-        }]);
-
-        setNewTodo({
-            topic: '',
-            description: '',
-            date: '',
-            status: 'incomplete'
-        });
-        setShowModal(false);
+        try {
+            await axios.post('http://localhost:5555/api/todos', newTodo);
+            fetchTodos(); // Refresh the list after add
+            setNewTodo({
+                title: '',
+                description: '',
+                date: '',
+                status: 'incomplete'
+            });
+            setShowModal(false);
+        } catch (err) {
+            setError(err.message);
+        }
     };
 
     const incompleteTodos = todos.filter(todo => todo.status === 'incomplete');
-    const completeTodos = todos.filter(todo => todo.status === 'complete');
+    const completeTodos = todos.filter(todo => todo.status === 'completed');
+
+    if (loading) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Loading...</div>;
+    if (error) return <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">Error: {error}</div>;
 
     return (
         <div className="min-h-screen bg-gray-50 p-6">
@@ -105,12 +106,12 @@ function Home() {
                             </div>
                             <form onSubmit={handleAddTodo}>
                                 <div className="mb-4">
-                                    <label htmlFor="topic" className="block text-sm font-medium text-gray-700 mb-1">Topic</label>
+                                    <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                                     <input
                                         type="text"
-                                        id="topic"
-                                        name="topic"
-                                        value={newTodo.topic}
+                                        id="title"
+                                        name="title"
+                                        value={newTodo.title}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                                         required
@@ -174,7 +175,14 @@ function Home() {
                     </button>
                 </div>
 
-                {/* Rest of your existing todo list code remains the same */}
+                {/* Error message */}
+                {error && (
+                    <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+                        Error: {error}
+                    </div>
+                )}
+
+                {/* Todo Lists - Two Column Layout */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Incomplete Tasks Column */}
                     <div>
@@ -195,19 +203,19 @@ function Home() {
                         ) : (
                             <div className="space-y-4">
                                 {incompleteTodos.map(todo => (
-                                    <div key={todo.id} className="bg-white rounded-lg shadow-sm border-l-4 border-red-500 hover:shadow-md transition-shadow">
+                                    <div key={todo._id} className="bg-white rounded-lg shadow-sm border-l-4 border-red-500 hover:shadow-md transition-shadow">
                                         <div className="p-5">
                                             <div className="flex justify-between items-start">
-                                                <h3 className="font-medium text-gray-900">{todo.topic}</h3>
+                                                <h3 className="font-medium text-gray-900">{todo.title}</h3>
                                                 <div className="flex space-x-2">
                                                     <button
-                                                        onClick={() => toggleStatus(todo.id)}
+                                                        onClick={() => toggleStatus(todo._id)}
                                                         className="text-xs bg-green-50 text-green-700 px-3 py-1 rounded hover:bg-green-100 transition-colors"
                                                     >
                                                         Complete
                                                     </button>
                                                     <button
-                                                        onClick={() => deleteTodo(todo.id)}
+                                                        onClick={() => deleteTodo(todo._id)}
                                                         className="text-gray-400 hover:text-red-500 transition-colors"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -221,7 +229,7 @@ function Home() {
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
-                                                {todo.date}
+                                                {new Date(todo.date).toLocaleDateString()}
                                             </div>
                                         </div>
                                     </div>
@@ -249,19 +257,19 @@ function Home() {
                         ) : (
                             <div className="space-y-4">
                                 {completeTodos.map(todo => (
-                                    <div key={todo.id} className="bg-white rounded-lg shadow-sm border-l-4 border-green-500 hover:shadow-md transition-shadow opacity-90 hover:opacity-100">
+                                    <div key={todo._id} className="bg-white rounded-lg shadow-sm border-l-4 border-green-500 hover:shadow-md transition-shadow opacity-90 hover:opacity-100">
                                         <div className="p-5">
                                             <div className="flex justify-between items-start">
-                                                <h3 className="font-medium text-gray-900 line-through">{todo.topic}</h3>
+                                                <h3 className="font-medium text-gray-900 line-through">{todo.title}</h3>
                                                 <div className="flex space-x-2">
                                                     <button
-                                                        onClick={() => toggleStatus(todo.id)}
+                                                        onClick={() => toggleStatus(todo._id)}
                                                         className="text-xs bg-gray-100 text-gray-700 px-3 py-1 rounded hover:bg-gray-200 transition-colors"
                                                     >
                                                         Undo
                                                     </button>
                                                     <button
-                                                        onClick={() => deleteTodo(todo.id)}
+                                                        onClick={() => deleteTodo(todo._id)}
                                                         className="text-gray-400 hover:text-red-500 transition-colors"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -275,7 +283,7 @@ function Home() {
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                                 </svg>
-                                                {todo.date}
+                                                {new Date(todo.date).toLocaleDateString()}
                                             </div>
                                         </div>
                                     </div>
