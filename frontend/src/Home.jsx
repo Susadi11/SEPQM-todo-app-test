@@ -46,13 +46,19 @@ function Home() {
 
     const deleteTodo = async (id) => {
         try {
-            await axios.delete(`http://localhost:5555/api/todos/${id}`);
-            fetchTodos(); // Refresh the list after delete
+          await axios.delete(`http://localhost:5555/api/todos/${id}`);
+          fetchTodos();
+          setError(null); // Clear previous errors on success
         } catch (err) {
-            setError(err.message);
+          const errorMsg = err.response?.data?.message || 
+                          err.message || 
+                          "Failed to delete task";
+          setError(errorMsg);
+          
+          // Keep error visible for at least 5 seconds
+          setTimeout(() => setError(null), 5000);
         }
-    };
-
+      };
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setNewTodo(prev => ({
