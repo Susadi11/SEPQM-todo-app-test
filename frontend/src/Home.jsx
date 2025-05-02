@@ -94,7 +94,7 @@ function Home() {
         <div className="min-h-screen bg-gray-50 p-6">
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div data-testid="modal" className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
                         <div className="p-6">
                             <div className="flex justify-between items-center mb-4">
@@ -123,6 +123,7 @@ function Home() {
                                         type="text"
                                         id="title"
                                         name="title"
+                                        data-testid="title-input"
                                         value={newTodo.title}
                                         onChange={handleInputChange}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -164,6 +165,7 @@ function Home() {
                                     </button>
                                     <button
                                         type="submit"
+                                        data-testid="add-submit-button"
                                         className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700"
                                     >
                                         Add Task
@@ -184,6 +186,7 @@ function Home() {
                             setShowModal(true);
                             setError(null);
                         }}
+                        data-testid="add-task-button"
                         className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -234,6 +237,7 @@ function Home() {
                                                     </button>
                                                     <button
                                                         onClick={() => deleteTodo(todo._id)}
+                                                        data-testid="delete-button"
                                                         className="text-gray-400 hover:text-red-500 transition-colors"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -290,6 +294,7 @@ function Home() {
                                                     </button>
                                                     <button
                                                         onClick={() => deleteTodo(todo._id)}
+                                                        data-testid="delete-button"
                                                         className="text-gray-400 hover:text-red-500 transition-colors"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
